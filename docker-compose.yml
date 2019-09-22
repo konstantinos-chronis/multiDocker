@@ -1,0 +1,47 @@
+version: '3'
+services: 
+  postgres:
+    image: 'postgres:latest'
+  redis:
+    image: 'redis:latest'
+  nginx:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - '3050:80'
+  api: 
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./server
+    depends_on:
+        - postgres
+    volumes:
+      - /app/node_modules #don't try to override folder
+      - ./server:/app #from the server directory copy evrything in the app folder of the container
+    environment: 
+      - REDIS_HOST=redis #this is the name of the service at line 5
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres #this is the name of the service at line 3
+      - PGDATABASE=postgres
+      - PGPASSWORD=postgres_password
+      - PGPORT=5432
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules #don't try to override folder
+      - ./client:/app #from the client directory copy evrything in the app folder of the container
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      - /app/node_modules #don't try to override folder
+      - ./worker:/app #from the worker directory copy evrything in the app folder of the container
+    environment:
+        - REDIS_HOST=redis
+        - REDIS_PORT=6379
